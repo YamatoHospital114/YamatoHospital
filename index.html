@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>【学園祭】整理券 順番待ち状況</title>
+
+  <style>
+    :root {
+      --text-color: #333333;
+      --bg-color: #f7f9fa;
+      --card-bg: #ffffff;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      line-height: 1.6;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    #app {
+      width: 100%;
+      max-width: 450px;
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 30px 24px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      text-align: center;
+    }
+
+    .header-title {
+      font-size: 1.1rem;
+      color: #666;
+      margin-bottom: 20px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+
+    .number-box {
+      background-color: #f0fdf4;
+      border: 2px solid #bbf7d0;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+
+    .number-label { font-size: 0.9rem; color: #16a34a; font-weight: bold; }
+    .number-value { font-size: 2.5rem; font-weight: 800; color: #15803d; margin: 5px 0; }
+
+    .status-box { margin-bottom: 10px; }
+    .current-label { font-size: 1rem; color: #555; }
+    .current-value { font-size: 3rem; font-weight: 800; color: var(--text-color); line-height: 1.2; margin: 8px 0; }
+
+    .wait-message {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #d97706;
+      background-color: #fffbeb;
+      padding: 10px;
+      border-radius: 8px;
+      display: inline-block;
+      margin-top: 5px;
+    }
+
+    .call-now {
+      color: #e11d48;
+      background-color: #fff1f2;
+      border: 1px solid #fecdd3;
+      animation: pulse 2s infinite;
+    }
+
+    .error-message {
+      font-size: 0.95rem;
+      color: #b91c1c;
+      background-color: #fef2f2;
+      padding: 10px;
+      border-radius: 8px;
+      display: inline-block;
+      margin-top: 5px;
+    }
+
+    .footer-text { font-size: 0.8rem; color: #999; margin-top: 24px; }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.03); }
+      100% { transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="app">
+    <div class="header-title">✨ 学園祭 整理券システム ✨</div>
+
+    <div class="number-box">
+      <div class="number-label">あなたの整理券番号</div>
+      <div class="number-value"><span id="my-no">--</span>番</div>
+    </div>
+
+    <div class="status-box">
+      <div class="current-label">現在の呼び出し番号</div>
+      <div class="current-value"><span id="current-no">--</span>番</div>
+      <div id="status-msg-container"></div>
+    </div>
+
+    <div class="footer-text">
+      ※画面を開いたままにしておくと自動で更新されます(10秒ごと)
+    </div>
+  </div>
+
+  <script>
+    // ===== ここをGASの exec URL に置き換えてください =====
+    const GAS_API_URL = 'https://script.google.com/macros/s/【ここをデプロイIDに置き換え】/exec';
+    // =====================================================
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const myNo = Number(urlParams.get('no')) || 0;
+    document.getElementById('my-no').innerText = myNo;
+
+    function updateStatus() {
+      fetch(GAS_API_URL + '?action=getCurrentNo')
+        .then((res) => res.json())
+        .then((data) => {
+          const msgContainer = document.getElementById('status-msg-container');
+
+          if (!data.success) {
+            msgContainer.innerHTML = '<div class="error-message">取得に失敗しました</div>';
+            return;
+          }
+
+          const current = Number(data.currentNo);
+          document.getElementById('current-no').innerText = current;
+
+          const diff = myNo - current;
+
+          if (myNo === 0) {
+            msgContainer.innerHTML = '<div class="wait-message">整理券番号が読み込めません</div>';
+          } else if (diff > 0) {
+            msgContainer.innerHTML = '<div class="wait-message">あと ' + diff + ' 組です</div>';
+          } else if (diff === 0) {
+            msgContainer.innerHTML = '<div class="wait-message call-now">📢 まもなく順番です！会場へお越しください</div>';
+          } else {
+            msgContainer.innerHTML = '<div class="wait-message" style="background-color:#e5e7eb; color:#666;">この番号は呼び出し済みです</div>';
+          }
+        })
+        .catch((err) => {
+          console.error('通信エラー: ' + err);
+          document.getElementById('status-msg-container').innerHTML = '<div class="error-message">通信エラーが発生しました</div>';
+        });
+    }
+
+    window.onload = function () {
+      updateStatus();
+      setInterval(updateStatus, 10000);
+    };
+  </script>
+</body>
+</html>
