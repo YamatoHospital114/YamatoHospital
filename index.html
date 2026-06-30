@@ -4,35 +4,63 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>【学園祭】整理券 順番待ち状況</title>
-
   <style>
-    :root {
-      --text-color: #333333;
-      --bg-color: #f7f9fa;
-      --card-bg: #ffffff;
-    }
-
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      line-height: 1.6;
-      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #f7f9fa;
+      color: #333;
+      min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
-      min-height: 100vh;
+      padding: 20px;
     }
 
+    /* ローディングオーバーレイ */
+    #loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(255, 255, 255, 0.85);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      gap: 14px;
+      transition: opacity 0.2s;
+    }
+
+    #loading-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #d1fae5;
+      border-top-color: #16a34a;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .spinner-label {
+      font-size: 0.9rem;
+      color: #555;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* メインカード */
     #app {
       width: 100%;
       max-width: 450px;
-      background: var(--card-bg);
+      background: #fff;
       border-radius: 16px;
       padding: 30px 24px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
       text-align: center;
     }
 
@@ -45,7 +73,7 @@
     }
 
     .number-box {
-      background-color: #f0fdf4;
+      background: #f0fdf4;
       border: 2px solid #bbf7d0;
       border-radius: 12px;
       padding: 16px;
@@ -56,47 +84,38 @@
     .number-value { font-size: 2.5rem; font-weight: 800; color: #15803d; margin: 5px 0; }
 
     .status-box { margin-bottom: 10px; }
-    .current-label { font-size: 1rem; color: #555; }
-    .current-value { font-size: 3rem; font-weight: 800; color: var(--text-color); line-height: 1.2; margin: 8px 0; }
+    .ahead-label { font-size: 1rem; color: #555; }
 
-    .wait-message {
+    .status-badge {
+      display: inline-block;
+      margin-top: 16px;
+      padding: 14px 24px;
+      border-radius: 12px;
       font-size: 1.2rem;
       font-weight: bold;
-      color: #d97706;
-      background-color: #fffbeb;
-      padding: 10px;
-      border-radius: 8px;
-      display: inline-block;
-      margin-top: 5px;
     }
 
-    .call-now {
-      color: #e11d48;
-      background-color: #fff1f2;
-      border: 1px solid #fecdd3;
-      animation: pulse 2s infinite;
-    }
-
-    .error-message {
-      font-size: 0.95rem;
-      color: #b91c1c;
-      background-color: #fef2f2;
-      padding: 10px;
-      border-radius: 8px;
-      display: inline-block;
-      margin-top: 5px;
-    }
+    .badge-waiting  { background: #fffbeb; color: #d97706; }
+    .badge-called   { background: #fff1f2; color: #e11d48; border: 1px solid #fecdd3; animation: pulse 2s infinite; }
+    .badge-served   { background: #f0fdf4; color: #16a34a; }
+    .badge-deleted  { background: #f3f4f6; color: #6b7280; }
+    .badge-unknown  { background: #fef2f2; color: #b91c1c; }
 
     .footer-text { font-size: 0.8rem; color: #999; margin-top: 24px; }
 
     @keyframes pulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.03); }
-      100% { transform: scale(1); }
+      0%, 100% { transform: scale(1); }
+      50%       { transform: scale(1.03); }
     }
   </style>
 </head>
 <body>
+
+  <!-- ローディングオーバーレイ -->
+  <div id="loading-overlay">
+    <div class="spinner"></div>
+    <div class="spinner-label">読み込み中...</div>
+  </div>
 
   <div id="app">
     <div class="header-title">✨ 学園祭 整理券システム ✨</div>
@@ -107,58 +126,94 @@
     </div>
 
     <div class="status-box">
-      <div class="current-label">現在の呼び出し番号</div>
-      <div class="current-value"><span id="current-no">--</span>番</div>
-      <div id="status-msg-container"></div>
+      <div class="ahead-label" id="ahead-label">--</div>
+      <div id="status-badge-container"></div>
     </div>
 
-    <div class="footer-text">
-      ※画面を開いたままにしておくと自動で更新されます(10秒ごと)
-    </div>
+    <div class="footer-text">※ 10秒ごとに自動更新されます</div>
   </div>
 
   <script>
-    // ===== ここをGASの exec URL に置き換えてください =====
-    const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbzbziXkiEftIvKwemNvx6zW58E88NYqfyXnTnVthKIJdqZ6pdrxmez_UBe7K866uzb-cQ/exec';
-    // =====================================================
+    // ======================================================
+    //  ここを自分のGAS exec URL に書き換えてください
+    var GAS_API_URL = 'https://script.google.com/macros/s/【デプロイIDに置き換え】/exec';
+    // ======================================================
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const myNo = Number(urlParams.get('no')) || 0;
-    document.getElementById('my-no').innerText = myNo;
+    var params = new URLSearchParams(window.location.search);
+    var myNo = Number(params.get('no')) || 0;
+    document.getElementById('my-no').innerText = myNo > 0 ? myNo : '--';
+
+    function setLoading(on) {
+      var overlay = document.getElementById('loading-overlay');
+      if (on) {
+        overlay.classList.remove('hidden');
+      } else {
+        overlay.classList.add('hidden');
+      }
+    }
+
+    function renderStatus(data) {
+      var aheadLabel = document.getElementById('ahead-label');
+      var badgeContainer = document.getElementById('status-badge-container');
+
+      if (myNo === 0) {
+        aheadLabel.innerText = '';
+        badgeContainer.innerHTML = '<div class="status-badge badge-unknown">整理券番号が読み込めません</div>';
+        return;
+      }
+
+      var s = data.myStatus;
+
+      if (s === 'waiting' || s === 'absent') {
+        aheadLabel.innerText = 'あなたの前に ' + data.ahead + ' 組います';
+        if (data.ahead === 0) {
+          badgeContainer.innerHTML = '<div class="status-badge badge-waiting">まもなくお呼びします。会場付近でお待ちください</div>';
+        } else {
+          badgeContainer.innerHTML = '<div class="status-badge badge-waiting">しばらくお待ちください</div>';
+        }
+      } else if (s === 'called') {
+        aheadLabel.innerText = '';
+        badgeContainer.innerHTML = '<div class="status-badge badge-called">📢 まもなく順番です！会場へお越しください</div>';
+      } else if (s === 'served') {
+        aheadLabel.innerText = '';
+        badgeContainer.innerHTML = '<div class="status-badge badge-served">✓ ご来場ありがとうございました</div>';
+      } else if (s === 'deleted') {
+        aheadLabel.innerText = '';
+        badgeContainer.innerHTML = '<div class="status-badge badge-deleted">整理券の有効期限が切れています。スタッフへご相談ください</div>';
+      } else {
+        aheadLabel.innerText = '';
+        badgeContainer.innerHTML = '<div class="status-badge badge-unknown">整理券番号が見つかりません</div>';
+      }
+    }
 
     function updateStatus() {
-      fetch(GAS_API_URL + '?action=getCurrentNo')
-        .then((res) => res.json())
-        .then((data) => {
-          const msgContainer = document.getElementById('status-msg-container');
+      if (myNo === 0) {
+        renderStatus({ myStatus: 'unknown', ahead: 0 });
+        setLoading(false);
+        return;
+      }
 
-          if (!data.success) {
-            msgContainer.innerHTML = '<div class="error-message">取得に失敗しました</div>';
-            return;
-          }
-
-          const current = Number(data.currentNo);
-          document.getElementById('current-no').innerText = current;
-
-          const diff = myNo - current;
-
-          if (myNo === 0) {
-            msgContainer.innerHTML = '<div class="wait-message">整理券番号が読み込めません</div>';
-          } else if (diff > 0) {
-            msgContainer.innerHTML = '<div class="wait-message">あと ' + diff + ' 組です</div>';
-          } else if (diff === 0) {
-            msgContainer.innerHTML = '<div class="wait-message call-now">📢 まもなく順番です！会場へお越しください</div>';
+      fetch(GAS_API_URL + '?action=getQueueStatus&no=' + myNo)
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          if (data.success) {
+            renderStatus(data);
           } else {
-            msgContainer.innerHTML = '<div class="wait-message" style="background-color:#e5e7eb; color:#666;">この番号は呼び出し済みです</div>';
+            document.getElementById('status-badge-container').innerHTML =
+              '<div class="status-badge badge-unknown">取得に失敗しました</div>';
           }
+          setLoading(false);
         })
-        .catch((err) => {
+        .catch(function(err) {
           console.error('通信エラー: ' + err);
-          document.getElementById('status-msg-container').innerHTML = '<div class="error-message">通信エラーが発生しました</div>';
+          document.getElementById('status-badge-container').innerHTML =
+            '<div class="status-badge badge-unknown">通信エラーが発生しました</div>';
+          setLoading(false);
         });
     }
 
-    window.onload = function () {
+    window.onload = function() {
+      setLoading(true);
       updateStatus();
       setInterval(updateStatus, 10000);
     };
