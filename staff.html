@@ -4,176 +4,414 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>【スタッフ用】呼び出し操作</title>
-
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      background-color: #1f2937;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #111827;
       color: #f9fafb;
-      padding: 20px;
+      min-height: 100vh;
       display: flex;
       justify-content: center;
-      align-items: center;
-      min-height: 100vh;
+      align-items: flex-start;
+      padding: 20px;
     }
 
+    /* ローディングオーバーレイ */
+    #loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(17, 24, 39, 0.8);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      gap: 14px;
+      transition: opacity 0.2s;
+    }
+
+    #loading-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .spinner {
+      width: 44px;
+      height: 44px;
+      border: 4px solid #374151;
+      border-top-color: #06C755;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .spinner-label { font-size: 0.9rem; color: #9ca3af; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* メインレイアウト */
     #app {
       width: 100%;
-      max-width: 420px;
-      background: #111827;
-      border-radius: 16px;
-      padding: 28px 22px;
-      text-align: center;
+      max-width: 460px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding-top: 8px;
     }
 
-    .header-title {
+    /* カード共通 */
+    .card {
+      background: #1f2937;
+      border-radius: 14px;
+      padding: 22px 20px;
+    }
+
+    .card-title {
+      font-size: 0.8rem;
+      color: #6b7280;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    /* ---- 呼び出しセクション ---- */
+
+    /* アイドル状態 */
+    #section-idle { display: flex; flex-direction: column; gap: 12px; }
+
+    .waiting-count {
       font-size: 1rem;
       color: #9ca3af;
-      margin-bottom: 16px;
-      letter-spacing: 0.05em;
-    }
-
-    .current-value {
-      font-size: 4rem;
-      font-weight: 800;
-      margin: 10px 0 24px;
-    }
-
-    .step-row {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 24px;
-    }
-
-    .btn {
-      flex: 1;
-      padding: 18px;
-      border: none;
-      border-radius: 12px;
-      font-size: 1.4rem;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    .btn-minus { background-color: #374151; color: #f9fafb; }
-    .btn-plus { background-color: #06C755; color: white; }
-    .btn:active { transform: scale(0.97); }
-
-    .manual-row {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 12px;
-    }
-
-    .manual-row input {
-      flex: 1;
-      font-size: 1.2rem;
-      padding: 12px;
-      border-radius: 10px;
-      border: 1px solid #374151;
-      background-color: #1f2937;
-      color: #f9fafb;
       text-align: center;
     }
 
-    .btn-set {
-      background-color: #2563eb;
-      color: white;
-      padding: 12px 18px;
+    .waiting-count span {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: #f9fafb;
+      margin: 0 4px;
+    }
+
+    /* 呼び出し中状態 */
+    #section-called { display: flex; flex-direction: column; gap: 12px; }
+
+    .calling-label { font-size: 0.9rem; color: #9ca3af; text-align: center; }
+
+    .calling-number {
+      font-size: 4.5rem;
+      font-weight: 800;
+      text-align: center;
+      color: #f9fafb;
+      line-height: 1;
+    }
+
+    .calling-number small {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #9ca3af;
+    }
+
+    .action-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    /* ボタン */
+    .btn {
+      flex: 1;
+      padding: 16px 10px;
       border: none;
-      border-radius: 10px;
+      border-radius: 12px;
+      font-size: 1rem;
       font-weight: bold;
       cursor: pointer;
+      transition: transform 0.1s, filter 0.1s;
+      line-height: 1.3;
     }
 
-    .status-text {
+    .btn:active { transform: scale(0.97); filter: brightness(0.9); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    .btn-primary  { background: #06C755; color: #fff; }
+    .btn-present  { background: #2563eb; color: #fff; }
+    .btn-absent   { background: #dc2626; color: #fff; }
+    .btn-secondary { background: #374151; color: #f9fafb; }
+
+    /* ---- 発券セクション ---- */
+    .issue-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .issue-row input {
+      flex: 1;
+      background: #111827;
+      border: 1px solid #374151;
+      border-radius: 10px;
+      color: #f9fafb;
+      font-size: 1.1rem;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .issue-row input::placeholder { color: #4b5563; }
+
+    /* ---- ステータステキスト ---- */
+    .status-line {
       font-size: 0.85rem;
-      color: #9ca3af;
-      margin-top: 16px;
       min-height: 1.2em;
+      text-align: center;
     }
 
-    .status-error { color: #f87171; }
-    .status-ok { color: #4ade80; }
+    .ok    { color: #4ade80; }
+    .error { color: #f87171; }
+    .info  { color: #9ca3af; }
   </style>
 </head>
 <body>
 
+  <!-- ローディングオーバーレイ -->
+  <div id="loading-overlay">
+    <div class="spinner"></div>
+    <div class="spinner-label" id="loading-label">読み込み中...</div>
+  </div>
+
   <div id="app">
-    <div class="header-title">現在の呼び出し番号</div>
-    <div class="current-value"><span id="current-no">--</span>番</div>
 
-    <div class="step-row">
-      <button class="btn btn-minus" onclick="step(-1)">−1</button>
-      <button class="btn btn-plus" onclick="step(1)">+1</button>
+    <!-- 呼び出しカード -->
+    <div class="card" id="call-card">
+      <div class="card-title">呼び出し操作</div>
+
+      <!-- アイドル状態 -->
+      <div id="section-idle">
+        <div class="waiting-count">
+          待機中: <span id="waiting-count">--</span> 組
+        </div>
+        <button class="btn btn-primary" id="btn-call-next" onclick="callNext()">
+          次のお客様を呼び出す
+        </button>
+        <div class="status-line info" id="call-status"></div>
+      </div>
+
+      <!-- 呼び出し中状態 -->
+      <div id="section-called" style="display:none;">
+        <div class="calling-label">呼び出し中</div>
+        <div class="calling-number">
+          <span id="calling-no">--</span><small> 番</small>
+        </div>
+        <div class="action-row">
+          <button class="btn btn-present" onclick="confirmPresent()">
+            このお客様を<br>呼び出し
+          </button>
+          <button class="btn btn-absent" onclick="markAbsent()">
+            お客様<br>不在
+          </button>
+        </div>
+        <div class="status-line info" id="call-status-called"></div>
+      </div>
     </div>
 
-    <div class="manual-row">
-      <input type="number" id="manual-no" placeholder="番号を直接指定(欠番対応)">
-      <button class="btn-set" onclick="setManual()">呼び出す</button>
+    <!-- 発券カード -->
+    <div class="card">
+      <div class="card-title">整理券発券</div>
+      <div class="issue-row">
+        <input type="number" id="issue-no" placeholder="番号 (省略で自動連番)">
+        <button class="btn btn-secondary" onclick="issueTicket()" style="flex:0 0 auto; padding: 12px 18px;">
+          発券
+        </button>
+      </div>
+      <div class="status-line info" id="issue-status" style="margin-top: 10px;"></div>
     </div>
 
-    <div id="status-text" class="status-text"></div>
   </div>
 
   <script>
-    // ===== ここをGASの exec URL に置き換えてください(index.htmlと同じもの) =====
-    const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbzbziXkiEftIvKwemNvx6zW58E88NYqfyXnTnVthKIJdqZ6pdrxmez_UBe7K866uzb-cQ/exec';
-    // ===========================================================================
+    // ======================================================
+    //  ここを自分のGAS exec URL に書き換えてください
+    var GAS_API_URL = 'https://script.google.com/macros/s/【デプロイIDに置き換え】/exec';
+    // ======================================================
 
-    function refresh() {
-      fetch(GAS_API_URL + '?action=getCurrentNo')
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success) {
-            document.getElementById('current-no').innerText = data.currentNo;
+    // ---------- ローディング制御 ----------
+
+    var loadingCount = 0; // 複数の非同期処理が重なってもちゃんと隠れるようにカウント管理
+
+    function startLoading(label) {
+      loadingCount++;
+      document.getElementById('loading-label').innerText = label || '処理中...';
+      document.getElementById('loading-overlay').classList.remove('hidden');
+    }
+
+    function stopLoading() {
+      loadingCount = Math.max(0, loadingCount - 1);
+      if (loadingCount === 0) {
+        document.getElementById('loading-overlay').classList.add('hidden');
+      }
+    }
+
+    // ---------- UI状態の切り替え ----------
+
+    // state: 'idle' | 'called'
+    function setUIState(state, calledNo, waitingCount) {
+      var sectionIdle   = document.getElementById('section-idle');
+      var sectionCalled = document.getElementById('section-called');
+
+      if (state === 'called') {
+        sectionIdle.style.display   = 'none';
+        sectionCalled.style.display = 'flex';
+        document.getElementById('calling-no').innerText = calledNo;
+      } else {
+        sectionIdle.style.display   = 'flex';
+        sectionCalled.style.display = 'none';
+        document.getElementById('waiting-count').innerText =
+          waitingCount !== undefined ? waitingCount : '--';
+      }
+    }
+
+    function setCallStatus(text, cls) {
+      var el = document.getElementById('call-status');
+      el.innerText = text;
+      el.className = 'status-line ' + (cls || 'info');
+    }
+
+    function setCallStatusCalled(text, cls) {
+      var el = document.getElementById('call-status-called');
+      el.innerText = text;
+      el.className = 'status-line ' + (cls || 'info');
+    }
+
+    function setIssueStatus(text, cls) {
+      var el = document.getElementById('issue-status');
+      el.innerText = text;
+      el.className = 'status-line ' + (cls || 'info');
+    }
+
+    // ---------- API通信 ----------
+
+    function apiGet(params) {
+      var query = Object.keys(params).map(function(k) {
+        return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
+      }).join('&');
+      return fetch(GAS_API_URL + '?' + query).then(function(res) { return res.json(); });
+    }
+
+    // ---------- スタッフ状況を取得して画面に反映 ----------
+
+    function refreshStaffStatus(silent) {
+      if (!silent) startLoading('読み込み中...');
+      return apiGet({ action: 'getStaffStatus' })
+        .then(function(data) {
+          if (!data.success) throw new Error(data.message);
+          if (data.currentCalledNo !== null) {
+            setUIState('called', data.currentCalledNo);
+          } else {
+            setUIState('idle', null, data.waitingCount);
           }
         })
-        .catch((err) => setStatus('通信エラー: ' + err, 'status-error'));
+        .catch(function(err) {
+          setCallStatus('通信エラー: ' + err, 'error');
+        })
+        .finally(function() {
+          if (!silent) stopLoading();
+        });
     }
 
-    function step(delta) {
-      setStatus('更新中...', '');
-      fetch(GAS_API_URL + '?action=stepCurrentNo&delta=' + delta)
-        .then((res) => res.json())
-        .then(handleResult)
-        .catch((err) => setStatus('通信エラー: ' + err, 'status-error'));
+    // ---------- 次のお客様を呼び出す ----------
+
+    function callNext() {
+      startLoading('呼び出し中...');
+      setCallStatus('', '');
+      apiGet({ action: 'callNext' })
+        .then(function(data) {
+          if (!data.success) throw new Error(data.message);
+          if (data.noneLeft) {
+            setCallStatus('呼び出し待ちのお客様はいません', 'info');
+            return refreshStaffStatus(true);
+          }
+          setUIState('called', data.ticketNo);
+          setCallStatusCalled('', '');
+        })
+        .catch(function(err) {
+          setCallStatus('エラー: ' + err, 'error');
+        })
+        .finally(function() { stopLoading(); });
     }
 
-    function setManual() {
-      const value = document.getElementById('manual-no').value;
-      if (value === '') {
-        setStatus('番号を入力してください', 'status-error');
-        return;
-      }
-      setStatus('更新中...', '');
-      fetch(GAS_API_URL + '?action=setCurrentNo&no=' + encodeURIComponent(value))
-        .then((res) => res.json())
-        .then(handleResult)
-        .catch((err) => setStatus('通信エラー: ' + err, 'status-error'));
+    // ---------- 来場確認 ----------
+
+    function confirmPresent() {
+      startLoading('確認中...');
+      setCallStatusCalled('', '');
+      apiGet({ action: 'confirmPresent' })
+        .then(function(data) {
+          if (!data.success) throw new Error(data.message);
+          return refreshStaffStatus(true);
+        })
+        .catch(function(err) {
+          setCallStatusCalled('エラー: ' + err, 'error');
+        })
+        .finally(function() { stopLoading(); });
     }
 
-    function handleResult(result) {
-      if (result.success) {
-        document.getElementById('current-no').innerText = result.currentNo;
-        document.getElementById('manual-no').value = '';
-        setStatus('✓ 更新しました', 'status-ok');
-      } else {
-        setStatus(result.message || '更新に失敗しました', 'status-error');
-      }
+    // ---------- 不在処理 ----------
+
+    function markAbsent() {
+      startLoading('不在処理中...');
+      setCallStatusCalled('', '');
+      apiGet({ action: 'markAbsent' })
+        .then(function(data) {
+          if (!data.success) throw new Error(data.message);
+
+          var msg = data.absentTicketNo + '番: ';
+          if (data.absentNewStatus === 'deleted') {
+            msg += '不在期限切れのため削除しました';
+          } else {
+            msg += '不在として記録しました';
+          }
+
+          if (data.noneLeft) {
+            setUIState('idle', null, 0);
+            setCallStatus(msg + '（待機中のお客様はいません）', 'info');
+          } else {
+            setUIState('called', data.nextTicketNo);
+            setCallStatusCalled(msg, 'info');
+          }
+        })
+        .catch(function(err) {
+          setCallStatusCalled('エラー: ' + err, 'error');
+        })
+        .finally(function() { stopLoading(); });
     }
 
-    function setStatus(text, cls) {
-      const el = document.getElementById('status-text');
-      el.innerText = text;
-      el.className = 'status-text ' + cls;
+    // ---------- 発券 ----------
+
+    function issueTicket() {
+      var inputEl = document.getElementById('issue-no');
+      var no = inputEl.value.trim();
+      setIssueStatus('発券中...', 'info');
+
+      var params = { action: 'issueTicket' };
+      if (no !== '') params.no = no;
+
+      apiGet(params)
+        .then(function(data) {
+          if (!data.success) throw new Error(data.message);
+          setIssueStatus(data.ticketNo + '番を発券しました', 'ok');
+          inputEl.value = '';
+          // 待機人数を更新
+          refreshStaffStatus(true);
+        })
+        .catch(function(err) {
+          setIssueStatus('エラー: ' + err, 'error');
+        });
     }
 
-    window.onload = function () {
-      refresh();
-      setInterval(refresh, 10000);
+    // ---------- 初期化 ----------
+
+    window.onload = function() {
+      startLoading('読み込み中...');
+      refreshStaffStatus(true).then(function() { stopLoading(); });
     };
   </script>
 </body>
