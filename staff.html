@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>【スタッフ用】呼び出し操作</title>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: #1f2937;
+      color: #f9fafb;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    #app {
+      width: 100%;
+      max-width: 420px;
+      background: #111827;
+      border-radius: 16px;
+      padding: 28px 22px;
+      text-align: center;
+    }
+
+    .header-title {
+      font-size: 1rem;
+      color: #9ca3af;
+      margin-bottom: 16px;
+      letter-spacing: 0.05em;
+    }
+
+    .current-value {
+      font-size: 4rem;
+      font-weight: 800;
+      margin: 10px 0 24px;
+    }
+
+    .step-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 18px;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.4rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .btn-minus { background-color: #374151; color: #f9fafb; }
+    .btn-plus { background-color: #06C755; color: white; }
+    .btn:active { transform: scale(0.97); }
+
+    .manual-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .manual-row input {
+      flex: 1;
+      font-size: 1.2rem;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid #374151;
+      background-color: #1f2937;
+      color: #f9fafb;
+      text-align: center;
+    }
+
+    .btn-set {
+      background-color: #2563eb;
+      color: white;
+      padding: 12px 18px;
+      border: none;
+      border-radius: 10px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .status-text {
+      font-size: 0.85rem;
+      color: #9ca3af;
+      margin-top: 16px;
+      min-height: 1.2em;
+    }
+
+    .status-error { color: #f87171; }
+    .status-ok { color: #4ade80; }
+  </style>
+</head>
+<body>
+
+  <div id="app">
+    <div class="header-title">現在の呼び出し番号</div>
+    <div class="current-value"><span id="current-no">--</span>番</div>
+
+    <div class="step-row">
+      <button class="btn btn-minus" onclick="step(-1)">−1</button>
+      <button class="btn btn-plus" onclick="step(1)">+1</button>
+    </div>
+
+    <div class="manual-row">
+      <input type="number" id="manual-no" placeholder="番号を直接指定(欠番対応)">
+      <button class="btn-set" onclick="setManual()">呼び出す</button>
+    </div>
+
+    <div id="status-text" class="status-text"></div>
+  </div>
+
+  <script>
+    // ===== ここをGASの exec URL に置き換えてください(index.htmlと同じもの) =====
+    const GAS_API_URL = 'https://script.google.com/macros/s/【ここをデプロイIDに置き換え】/exec';
+    // ===========================================================================
+
+    function refresh() {
+      fetch(GAS_API_URL + '?action=getCurrentNo')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            document.getElementById('current-no').innerText = data.currentNo;
+          }
+        })
+        .catch((err) => setStatus('通信エラー: ' + err, 'status-error'));
+    }
+
+    function step(delta) {
+      setStatus('更新中...', '');
+      fetch(GAS_API_URL + '?action=stepCurrentNo&delta=' + delta)
+        .then((res) => res.json())
+        .then(handleResult)
+        .catch((err) => setStatus('通信エラー: ' + err, 'status-error'));
+    }
+
+    function setManual() {
+      const value = document.getElementById('manual-no').value;
+      if (value === '') {
+        setStatus('番号を入力してください', 'status-error');
+        return;
+      }
+      setStatus('更新中...', '');
+      fetch(GAS_API_URL + '?action=setCurrentNo&no=' + encodeURIComponent(value))
+        .then((res) => res.json())
+        .then(handleResult)
+        .catch((err) => setStatus('通信エラー: ' + err, 'status-error'));
+    }
+
+    function handleResult(result) {
+      if (result.success) {
+        document.getElementById('current-no').innerText = result.currentNo;
+        document.getElementById('manual-no').value = '';
+        setStatus('✓ 更新しました', 'status-ok');
+      } else {
+        setStatus(result.message || '更新に失敗しました', 'status-error');
+      }
+    }
+
+    function setStatus(text, cls) {
+      const el = document.getElementById('status-text');
+      el.innerText = text;
+      el.className = 'status-text ' + cls;
+    }
+
+    window.onload = function () {
+      refresh();
+      setInterval(refresh, 10000);
+    };
+  </script>
+</body>
+</html>
