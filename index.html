@@ -177,7 +177,10 @@
       } else if (s === 'served') {
         aheadLabel.innerText = '';
         badgeContainer.innerHTML = '<div class="status-badge badge-served">✓ ご来場ありがとうございました</div>';
-      } else if (s === 'deleted') {
+      } else if (s === 'absent' || s === 'absentNow') {
+        aheadLabel.innerText = '';
+        badgeContainer.innerHTML = '<div class="status-badge badge-absent">お呼び出しいたしましたがご不在でした。</div>';
+      else if (s === 'deleted') {
         aheadLabel.innerText = '';
         badgeContainer.innerHTML = '<div class="status-badge badge-deleted">整理券の有効期限が切れています。スタッフへご相談ください</div>';
       } else {
