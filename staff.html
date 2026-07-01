@@ -386,8 +386,6 @@
     // ---------- 発券 ----------
 
     function issueTicket() {
-      var inputEl = document.getElementById('issue-no');
-      var no = inputEl.value.trim();
       setIssueStatus('発券中...', 'info');
       startLoading('発券中...');
 
