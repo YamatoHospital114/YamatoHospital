@@ -386,7 +386,6 @@
     // ---------- 発券 ----------
 
     function issueTicket() {
-      setIssueStatus('発券中...', 'info');
       startLoading('発券中...');
 
       var params = { action: 'issueTicket' };
@@ -395,7 +394,6 @@
           if (!data.success) throw new Error(data.message);
           setIssueStatus(data.ticketNo + '番を発券しました', 'ok');
           stopLoading();
-          inputEl.value = '';
           // 待機人数を更新
           refreshStaffStatus(true);
         })
