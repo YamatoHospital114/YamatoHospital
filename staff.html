@@ -419,7 +419,7 @@
         .then(function(data) {
           if (!data.success) throw new Error(data.message);
           if (data.nextNumber) setNextNumber(data.nextNumber);
-        })
+        });
     }
 
     // ---------- 初期化 ----------
