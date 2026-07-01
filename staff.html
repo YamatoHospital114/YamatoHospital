@@ -418,7 +418,7 @@
       apiGet(params)
         .then(function(data) {
           if (!data.success) throw new Error(data.message);
-          setNextNumber(data.nextNumber);
+          if (data.nextNumber) setNextNumber(data.nextNumber);
         })
     }
 
@@ -427,6 +427,11 @@
     window.onload = function() {
       startLoading('読み込み中...');
       refreshStaffStatus(true).then(function() { stopLoading(); });
+      nextTicketNumber();
+      setInterval(function() {
+        refreshStaffStatus(true);
+        nextTicketNumber();
+      }, 10000);
     };
   </script>
 </body>
