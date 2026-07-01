@@ -135,7 +135,6 @@
 
   <script>
     // ======================================================
-    //  ここを自分のGAS exec URL に書き換えてください
     var GAS_API_URL = 'https://script.google.com/macros/s/AKfycbzbziXkiEftIvKwemNvx6zW58E88NYqfyXnTnVthKIJdqZ6pdrxmez_UBe7K866uzb-cQ/exec';
     // ======================================================
 
@@ -162,27 +161,27 @@
         return;
       }
 
-      var s = data.myStatus;
+      var status = data.myStatus;
 
-      if (s === 'waiting' || s === 'absent') {
+      if (status === 'waiting') {
         aheadLabel.innerText = 'あなたの前に ' + data.ahead + ' 組います';
         if (data.ahead === 0) {
           badgeContainer.innerHTML = '<div class="status-badge badge-waiting">まもなくお呼びします。会場付近でお待ちください</div>';
         } else {
           badgeContainer.innerHTML = '<div class="status-badge badge-waiting">しばらくお待ちください</div>';
         }
-      } else if (s === 'called') {
+      } else if (status === 'called') {
         aheadLabel.innerText = '';
         badgeContainer.innerHTML = '<div class="status-badge badge-called">📢 まもなく順番です！会場へお越しください</div>';
-      } else if (s === 'served') {
+      } else if (status === 'served') {
         aheadLabel.innerText = '';
         badgeContainer.innerHTML = '<div class="status-badge badge-served">✓ ご来場ありがとうございました</div>';
-      } else if (s === 'absent' || s === 'absentNow') {
+      } else if (status === 'absent' || status === 'absentNow') {
+        aheadLabel.innerText = 'あなたの前に ' + data.ahead + ' 組います';
+        badgeContainer.innerHTML = '<div class="status-badge badge-absent">お呼び出しいたしましたがご不在でした。' + deta.timeUntilDeletion + 'までにお越しいただければ並びなおさずご案内が可能です。</div>';
+      } else if (stauts === 'deleted') {
         aheadLabel.innerText = '';
-        badgeContainer.innerHTML = '<div class="status-badge badge-absent">お呼び出しいたしましたがご不在でした。</div>';
-      } else if (s === 'deleted') {
-        aheadLabel.innerText = '';
-        badgeContainer.innerHTML = '<div class="status-badge badge-deleted">整理券の有効期限が切れています。スタッフへご相談ください</div>';
+        badgeContainer.innerHTML = '<div class="status-badge badge-deleted">お呼びいたしましたがご不在でした。整理券の有効期限が切れましたので、再度お並びください。</div>';
       } else {
         aheadLabel.innerText = '';
         badgeContainer.innerHTML = '<div class="status-badge badge-unknown">整理券番号が見つかりません</div>';
