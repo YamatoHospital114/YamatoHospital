@@ -178,7 +178,7 @@
         badgeContainer.innerHTML = '<div class="status-badge badge-served">✓ ご来場ありがとうございました</div>';
       } else if (status === 'absent' || status === 'absentNow') {
         aheadLabel.innerText = 'あなたの前に ' + data.ahead + ' 組います';
-        badgeContainer.innerHTML = '<div class="status-badge badge-absent">お呼び出しいたしましたがご不在でした。' + deta.timeUntilDeletion + 'までにお越しいただければ並びなおさずご案内が可能です。</div>';
+        badgeContainer.innerHTML = '<div class="status-badge badge-absent">お呼び出しいたしましたがご不在でした。' + data.timeUntilDeletion + 'までにお越しいただければ並びなおさずご案内が可能です。</div>';
       } else if (stauts === 'deleted') {
         aheadLabel.innerText = '';
         badgeContainer.innerHTML = '<div class="status-badge badge-deleted">お呼びいたしましたがご不在でした。整理券の有効期限が切れましたので、再度お並びください。</div>';
