@@ -219,6 +219,12 @@
       updateStatus();
       setInterval(updateStatus, 10000);
     };
+    document.addEventListener('visibilitychange', function() {
+      if (document.visibilityState === 'visible') {
+        setLoading(true);
+        updateStatus();
+      }
+    });
   </script>
 </body>
 </html>
