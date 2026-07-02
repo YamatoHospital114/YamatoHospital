@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>【発券係】整理券発券</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #111827;
+      color: #f9fafb;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    #loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(17, 24, 39, 0.8);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      gap: 14px;
+      transition: opacity 0.2s;
+    }
+
+    #loading-overlay.hidden { opacity: 0; pointer-events: none; }
+
+    .spinner {
+      width: 44px;
+      height: 44px;
+      border: 4px solid #374151;
+      border-top-color: #06C755;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .spinner-label { font-size: 0.9rem; color: #9ca3af; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #app {
+      width: 100%;
+      max-width: 400px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .card {
+      background: #1f2937;
+      border-radius: 14px;
+      padding: 24px 20px;
+      text-align: center;
+    }
+
+    .card-title {
+      font-size: 0.8rem;
+      color: #6b7280;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    /* 次の番号表示 */
+    .next-no-label { font-size: 0.95rem; color: #9ca3af; margin-bottom: 6px; }
+
+    .next-no-value {
+      font-size: 5rem;
+      font-weight: 800;
+      color: #f9fafb;
+      line-height: 1;
+      margin-bottom: 24px;
+    }
+
+    .next-no-value small {
+      font-size: 1.8rem;
+      font-weight: 600;
+      color: #9ca3af;
+    }
+
+    /* 発券ボタン */
+    .btn-issue {
+      display: block;
+      width: 100%;
+      padding: 22px;
+      background: #06C755;
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      font-size: 1.4rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.1s, filter 0.1s;
+    }
+
+    .btn-issue:active { transform: scale(0.97); filter: brightness(0.9); }
+
+    /* 発券済み件数 */
+    .issued-count { font-size: 1rem; color: #9ca3af; margin-top: 16px; }
+    .issued-count span { color: #f9fafb; font-weight: bold; font-size: 1.2rem; }
+
+    /* ステータス */
+    .status-line { font-size: 0.85rem; min-height: 1.2em; margin-top: 12px; }
+    .ok    { color: #4ade80; }
+    .error { color: #f87171; }
+    .info  { color: #9ca3af; }
+  </style>
+</head>
+<body>
+
+  <div id="loading-overlay">
+    <div class="spinner"></div>
+    <div class="spinner-label" id="loading-label">読み込み中...</div>
+  </div>
+
+  <div id="app">
+    <div class="card">
+      <div class="card-title">次の整理券番号</div>
+      <div class="next-no-label">この番号の券をお渡しください</div>
+      <div class="next-no-value">
+        <span id="next-no">--</span><small> 番</small>
+      </div>
+      <button class="btn-issue" onclick="issueTicket()">
+        発券する
+      </button>
+      <div class="issued-count">
+        発券済み: <span id="issued-count">--</span> 枚
+      </div>
+      <div class="status-line info" id="status"></div>
+    </div>
+  </div>
+
+  <script>
+    // ======================================================
+    var GAS_API_URL = 'https://script.google.com/macros/s/【デプロイIDに置き換え】/exec';
+    // ======================================================
+
+    var loadingCount = 0;
+
+    function startLoading(label) {
+      loadingCount++;
+      document.getElementById('loading-label').innerText = label || '処理中...';
+      document.getElementById('loading-overlay').classList.remove('hidden');
+    }
+
+    function stopLoading() {
+      loadingCount = Math.max(0, loadingCount - 1);
+      if (loadingCount === 0) {
+        document.getElementById('loading-overlay').classList.add('hidden');
+      }
+    }
+
+    function setStatus(text, cls) {
+      var el = document.getElementById('status');
+      el.innerText = text;
+      el.className = 'status-line ' + (cls || 'info');
+    }
+
+    function apiGet(params) {
+      var query = Object.keys(params).map(function(k) {
+        return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
+      }).join('&');
+      return fetch(GAS_API_URL + '?' + query).then(function(res) { return res.json(); });
+    }
+
+    function refresh() {
+      return apiGet({ action: 'getNextTicketNumber' })
+        .then(function(data) {
+          if (!data.success) throw new Error(data.message);
+          document.getElementById('next-no').innerText = data.nextNumber;
+          document.getElementById('issued-count').innerText = data.nextNumber - 1;
+        })
+        .catch(function(err) {
+          setStatus('通信エラー: ' + err, 'error');
+        });
+    }
+
+    function issueTicket() {
+      startLoading('発券中...');
+      setStatus('', '');
+      apiGet({ action: 'issueTicket' })
+        .then(function(data) {
+          if (!data.success) throw new Error(data.message);
+          setStatus(data.ticketNo + '番を発券しました', 'ok');
+          return refresh();
+        })
+        .catch(function(err) {
+          setStatus('エラー: ' + err, 'error');
+        })
+        .finally(function() { stopLoading(); });
+    }
+
+    window.onload = function() {
+      startLoading('読み込み中...');
+      refresh().then(function() { stopLoading(); });
+      setInterval(refresh, 10000);
+    };
+
+    document.addEventListener('visibilitychange', function() {
+      if (document.visibilityState === 'visible') {
+        startLoading('更新中...');
+        refresh().then(function() { stopLoading(); });
+      }
+    });
+  </script>
+</body>
+</html>
