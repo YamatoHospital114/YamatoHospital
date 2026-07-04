@@ -181,6 +181,17 @@
 
     var params = new URLSearchParams(window.location.search);
     var myNo   = Number(params.get('no')) || 0;
+    
+    // liff.state 経由で戻ってきた場合の no パラメータ取り出し
+    if (myNo === 0) {
+      var liffState = params.get('liff.state');
+      if (liffState) {
+        var decoded = decodeURIComponent(liffState);
+        var match   = decoded.match(/[?&]no=([^&]+)/);
+        if (match) myNo = Number(match[1]) || 0;
+      }
+    }
+    
     document.getElementById('my-no').innerText = myNo > 0 ? myNo : '--';
 
     // ---------- ローディング ----------
