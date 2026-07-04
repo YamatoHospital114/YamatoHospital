@@ -208,7 +208,7 @@
     function setUIState(state, calledNo, waitingCount) {
       var idle   = document.getElementById('section-idle');
       var called = document.getElementById('section-called');
-
+    
       if (state === 'called') {
         idle.style.display   = 'none';
         called.style.display = 'flex';
@@ -216,9 +216,9 @@
       } else {
         idle.style.display   = 'flex';
         called.style.display = 'none';
-        document.getElementById('waiting-count').innerText =
-          waitingCount !== undefined ? waitingCount : '--';
-      
+        var count = waitingCount !== undefined ? waitingCount : '--';
+        document.getElementById('waiting-count').innerText = count;
+    
         var btn = document.querySelector('#section-idle .btn-primary');
         if (count === 0) {
           btn.disabled = true;
