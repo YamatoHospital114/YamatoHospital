@@ -270,29 +270,9 @@
         setLineStatus('整理券番号が読み込めません', 'error');
         return;
       }
-
-      setLineStatus('LINEに接続中...', '');
-      document.getElementById('btn-line').disabled = true;
-
-      // LIFFのURLにnoパラメータを乗せてログインする
-      var liffUrl = 'https://liff.line.me/' + LIFF_ID + '/?no=' + encodeURIComponent(myNo);
-
-      liff.init({ liffId: LIFF_ID })
-        .then(function() {
-          if (!liff.isLoggedIn()) {
-            // 外部ブラウザからのアクセスなので liff.login() でLINEログイン画面へ
-            liff.login({ redirectUri: liffUrl });
-            return;
-          }
-          return liff.getProfile().then(function(profile) {
-            return registerToGas_(profile.userId);
-          });
-        })
-        .catch(function(err) {
-          console.error('LIFF エラー: ' + err);
-          setLineStatus('LINE連携に失敗しました。もう一度お試しください', 'error');
-          document.getElementById('btn-line').disabled = false;
-        });
+      // liff.init()は呼ばない。liff.line.meに直接飛ばす。
+      var liffUrl = 'https://liff.line.me/' + LIFF_ID + '?no=' + encodeURIComponent(myNo);
+      window.location.href = liffUrl;
     }
 
     function registerToGas_(userId) {
