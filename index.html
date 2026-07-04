@@ -275,7 +275,7 @@
       document.getElementById('btn-line').disabled = true;
 
       // LIFFのURLにnoパラメータを乗せてログインする
-      var liffUrl = 'https://liff.line.me/' + LIFF_ID + '?no=' + encodeURIComponent(myNo);
+      var liffUrl = 'https://liff.line.me/' + LIFF_ID + '/?no=' + encodeURIComponent(myNo);
 
       liff.init({ liffId: LIFF_ID })
         .then(function() {
