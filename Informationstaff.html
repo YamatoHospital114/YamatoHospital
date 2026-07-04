@@ -219,6 +219,14 @@
         document.getElementById('waiting-count').innerText =
           waitingCount !== undefined ? waitingCount : '--';
       }
+
+      var btn = document.querySelector('#section-idle .btn-primary');
+      if (count === 0) {
+        btn.disabled = true;
+        btn.style.opacity = '0.35';
+      } else {
+        btn.disabled = false;
+        btn.style.opacity = '1';
     }
 
     function apiGet(params) {
