@@ -330,13 +330,7 @@
       setLoading(true);
       updateStatus();
       setInterval(updateStatus, 10000);
-
-      // liff.line.me 経由でリダイレクトされてきた場合の自動登録処理
-      // URLに liff.state が含まれていればLIFF経由のアクセスと判断する
-      if (window.location.search.indexOf('liff.state') !== -1 ||
-          window.location.hash.indexOf('access_token') !== -1) {
-        checkLiffReturn();
-      }
+      checkLiffReturn();
     };
 
     document.addEventListener('visibilitychange', function() {
