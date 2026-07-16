@@ -287,7 +287,6 @@
     }
 
     function registerToGas_(userId) {
-      return;
       setLineStatus('登録中...', '');
       return fetch(GAS_API_URL + '?action=registerUser&no=' + myNo + '&userId=' + encodeURIComponent(userId))
         .then(function(res) { return res.json(); })
