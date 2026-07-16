@@ -287,13 +287,14 @@
     }
 
     function registerToGas_(userId) {
-      // set     LineStatus('登録中...', '')
+      return;
+      setLineStatus('登録中...', '');
       return fetch(GAS_API_URL + '?action=registerUser&no=' + myNo + '&userId=' + encodeURIComponent(userId))
         .then(function(res) { return res.json(); })
         .then(function(data) {
           if (data.success) {
             setLineButtonDone();
-            // set     LineStatus('通知登録が完了しました', 'ok')
+            setLineStatus('通知登録が完了しました', 'ok');
           } else {
             setLineStatus('登録に失敗しました: ' + data.message, 'error');
             document.getElementById('btn-line').disabled = false;
