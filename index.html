@@ -305,22 +305,23 @@
         });
     }
 
-    // LIFFログイン後にリダイレクトで戻ってきた場合の処理
     function checkLiffReturn() {
-      // liff.line.me 経由で戻ってきたときは ?no= パラメータが保持されている
       if (myNo === 0) return;
-
+    
       liff.init({ liffId: LIFF_ID })
         .then(function() {
+          setLineStatus('isLoggedIn: ' + liff.isLoggedIn(), '');
           if (liff.isLoggedIn()) {
-            // ログイン済みなら自動的にuserIdを取得して登録
             return liff.getProfile().then(function(profile) {
+              setLineStatus('userId取得: ' + profile.userId.substring(0, 8), '');
               return registerToGas_(profile.userId);
             });
+          } else {
+            setLineStatus('未ログイン状態です', 'error');
           }
         })
         .catch(function(err) {
-          console.error('LIFF戻り処理エラー: ' + err);
+          setLineStatus('LIFF戻り処理エラー: ' + err, 'error');
         });
     }
 
