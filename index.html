@@ -313,7 +313,7 @@
           setLineStatus('isLoggedIn: ' + liff.isLoggedIn(), '');
           if (liff.isLoggedIn()) {
             return liff.getProfile().then(function(profile) {
-              setLineStatus('userId取得: ' + profile.userId.substring(0, 8), '');
+              setLineStatus('userId取得: ' + profile.userId.substring(0, 8), 'ok');
               return registerToGas_(profile.userId);
             });
           } else {
