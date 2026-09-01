@@ -294,6 +294,10 @@
           if (data.success) {
             setLineButtonDone();
             setLineStatus('通知登録が完了しました', 'ok');
+
+            localStorage.setItem('lineRegistered_' + myNo, '1');
+            setLineButtonDone();
+            setLineStatus('通知登録が完了しました', 'ok');
           } else {
             setLineStatus('登録に失敗しました: ' + data.message, 'error');
             document.getElementById('btn-line').disabled = false;
@@ -332,6 +336,12 @@
       updateStatus();
       setInterval(updateStatus, 10000);
       checkLiffReturn();
+
+      // ページ読み込み時にチェック(window.onloadの中に追加)
+      if (localStorage.getItem('lineRegistered_' + myNo)) {
+        setLineButtonDone();
+        setLineStatus('通知登録済みです', 'ok');
+      }
     };
 
     document.addEventListener('visibilitychange', function() {
