@@ -293,11 +293,12 @@
         .then(function(data) {
           if (data.success) {
             setLineButtonDone();
-            setLineStatus('通知登録が完了しました', 'ok');
-
+            if (data.isDuplicated) {
+              setLineStatus('登録済みです', 'ok');
+            } else if {
+              setLineStatus('通知登録が完了しました', 'ok');
+            }
             localStorage.setItem('lineRegistered_' + myNo, '1');
-            setLineButtonDone();
-            setLineStatus('通知登録が完了しました', 'ok');
           } else {
             setLineStatus('登録に失敗しました: ' + data.message, 'error');
             document.getElementById('btn-line').disabled = false;
