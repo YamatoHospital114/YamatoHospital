@@ -239,23 +239,31 @@
         badgeContainer.innerHTML = '<div class="status-badge badge-unknown">整理券番号が見つかりません</div>';
       }
     }
-
-    function updateStatus() {
+    
+    function updateStatus(retryCount) {
+      retryCount = retryCount || 0;
+    
       if (myNo === 0) {
         renderStatus({ myStatus: 'unknown', ahead: 0 });
         setLoading(false);
         return;
       }
-
+    
       fetch(GAS_API_URL + '?action=getQueueStatus&no=' + myNo)
         .then(function(res) { return res.json(); })
         .then(function(data) {
-          if (data.success) renderStatus(data);
+          if (data.success) {
+            renderStatus(data);
+          }
           setLoading(false);
         })
         .catch(function(err) {
-          console.error('通信エラー: ' + err);
-          setLoading(false);
+          if (retryCount < 3) {
+            setTimeout(function() { updateStatus(retryCount + 1); }, 2000);
+          } else {
+            console.error('通信エラー: ' + err);
+            setLoading(false);
+          }
         });
     }
 
