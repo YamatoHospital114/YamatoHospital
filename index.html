@@ -233,7 +233,7 @@
         document.getElementById('line-section').style.display = 'none';
       } else if (s === 'absent') {
         aheadLabel.innerText = '';
-        badgeContainer.innerHTML = '<div class="status-badge badge-absent">スタッフにお声がけください</div>';
+        badgeContainer.innerHTML = '<div class="status-badge badge-absent">' + data.lastAllowTime + 'を過ぎてから再度お呼び致します。会場でお待ちください。</div>';
       } else {
         aheadLabel.innerText = '';
         badgeContainer.innerHTML = '<div class="status-badge badge-unknown">整理券番号が見つかりません</div>';
