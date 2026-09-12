@@ -131,9 +131,6 @@
       <button class="btn-issue" onclick="issueTicket()">
         発券する
       </button>
-      <div class="issued-count">
-        発券済み: <span id="issued-count">--</span> 枚
-      </div>
       <div class="status-line info" id="status"></div>
     </div>
   </div>
@@ -176,7 +173,7 @@
         .then(function(data) {
           if (!data.success) throw new Error(data.message);
           document.getElementById('next-no').innerText = data.nextNumber;
-          document.getElementById('issued-count').innerText = data.nextNumber - 1;
+          // document.getElementById('issued-count').innerText = data.nextNumber - 1;
         })
         .catch(function(err) {
           setStatus('通信エラー: ' + err, 'error');
@@ -190,7 +187,8 @@
         .then(function(data) {
           if (!data.success) throw new Error(data.message);
           setStatus(data.ticketNo + '番を発券しました', 'ok');
-          return refresh();
+          document.getElementById('next-no').innerText = data.nextNo;
+          return;
         })
         .catch(function(err) {
           setStatus('エラー: ' + err, 'error');
