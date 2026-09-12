@@ -86,7 +86,7 @@
     }
 
     /* ---- 呼び出し中状態 ---- */
-    #section-called { display: flex; flex-direction: column; gap: 14px; }
+    #section-calling { display: flex; flex-direction: column; gap: 14px; }
 
     .calling-label { font-size: 0.9rem; color: #9ca3af; text-align: center; }
 
@@ -155,7 +155,7 @@
       </div>
 
       <!-- 呼び出し中状態 -->
-      <div id="section-called" style="display:none;">
+      <div id="section-calling" style="display:none;">
         <div class="calling-label">呼び出し中</div>
         <div class="calling-number">
           <span id="calling-no">--</span><small> 番</small>
@@ -168,7 +168,7 @@
             お客様<br>不在
           </button>
         </div>
-        <div class="status-line info" id="status-called"></div>
+        <div class="status-line info" id="status-calling"></div>
       </div>
     </div>
   </div>
@@ -199,23 +199,23 @@
       el.className = 'status-line ' + (cls || 'info');
     }
 
-    function setStatusCalled(text, cls) {
-      var el = document.getElementById('status-called');
+    function setStatuscalling(text, cls) {
+      var el = document.getElementById('status-calling');
       el.innerText = text;
       el.className = 'status-line ' + (cls || 'info');
     }
 
-    function setUIState(state, calledNo, waitingCount) {
+    function setUIState(state, callingNo, waitingCount) {
       var idle   = document.getElementById('section-idle');
-      var called = document.getElementById('section-called');
+      var calling = document.getElementById('section-calling');
     
-      if (state === 'called') {
+      if (state === 'calling') {
         idle.style.display   = 'none';
-        called.style.display = 'flex';
-        document.getElementById('calling-no').innerText = calledNo;
+        calling.style.display = 'flex';
+        document.getElementById('calling-no').innerText = callingNo;
       } else {
         idle.style.display   = 'flex';
-        called.style.display = 'none';
+        calling.style.display = 'none';
         var count = waitingCount !== undefined ? waitingCount : '--';
         document.getElementById('waiting-count').innerText = count;
     
@@ -241,8 +241,8 @@
       return apiGet({ action: 'getStaffStatus' })
         .then(function(data) {
           if (!data.success) throw new Error(data.message);
-          if (data.currentCalledNo !== null) {
-            setUIState('called', data.currentCalledNo);
+          if (data.currentcallingNo !== null) {
+            setUIState('calling', data.currentcallingNo);
           } else {
             setUIState('idle', null, data.waitingCount);
           }
@@ -262,8 +262,8 @@
             setStatusIdle('呼び出し待ちのお客様はいません', 'info');
             return refresh();
           }
-          setUIState('called', data.ticketNo);
-          setStatusCalled('', '');
+          setUIState('calling', data.ticketNo);
+          setStatuscalling('', '');
         })
         .catch(function(err) {
           setStatusIdle('エラー: ' + err, 'error');
@@ -273,21 +273,21 @@
 
     function confirmPresent() {
       startLoading('確認中...');
-      setStatusCalled('', '');
+      setStatuscalling('', '');
       apiGet({ action: 'confirmPresent' })
         .then(function(data) {
           if (!data.success) throw new Error(data.message);
           return refresh();
         })
         .catch(function(err) {
-          setStatusCalled('エラー: ' + err, 'error');
+          setStatuscalling('エラー: ' + err, 'error');
         })
         .finally(function() { stopLoading(); });
     }
 
     function markAbsent() {
       startLoading('不在処理中...');
-      setStatusCalled('', '');
+      setStatuscalling('', '');
       apiGet({ action: 'markAbsent' })
         .then(function(data) {
           if (!data.success) throw new Error(data.message);
@@ -295,12 +295,12 @@
             setUIState('idle', null, 0);
             setStatusIdle(data.absentTicketNo + '番を不在記録。待機中のお客様はいません', 'info');
           } else {
-            setUIState('called', data.nextTicketNo);
-            setStatusCalled(data.absentTicketNo + '番を不在記録', 'info');
+            setUIState('calling', data.nextTicketNo);
+            setStatuscalling(data.absentTicketNo + '番を不在記録', 'info');
           }
         })
         .catch(function(err) {
-          setStatusCalled('エラー: ' + err, 'error');
+          setStatuscalling('エラー: ' + err, 'error');
         })
         .finally(function() { stopLoading(); });
     }
