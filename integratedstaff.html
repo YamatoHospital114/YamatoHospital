@@ -262,15 +262,21 @@
       return fetch(GAS_API_URL + '?' + query).then(function(res) { return res.json(); });
     }
 
-    // ---- 発券まわり ----
-    function refreshIssue() {
-      return apiGet({ action: 'getNextTicketNumber' })
+    // ---- 状態まわり（発券・呼び出し統合） ----
+    function refreshAll() {
+      return apiGet({ action: 'getStaffStatus' })
         .then(function(data) {
           if (!data.success) throw new Error(data.message);
           document.getElementById('next-no').innerText = data.nextNumber;
+          if (data.currentcallingNo !== null) {
+            setCallUIState('calling', data.currentcallingNo);
+          } else {
+            setCallUIState('idle', null, data.waitingCount);
+          }
         })
         .catch(function(err) {
           setStatusIssue('通信エラー: ' + err, 'error');
+          setStatusCall('通信エラー: ' + err, 'error');
         });
     }
 
@@ -282,7 +288,7 @@
           if (!data.success) throw new Error(data.message);
           setStatusIssue(data.ticketNo + '番を発券しました', 'ok');
           document.getElementById('next-no').innerText = data.nextNumber;
-          return refreshCall();
+          return refreshAll();
         })
         .catch(function(err) {
           setStatusIssue('エラー: ' + err, 'error');
@@ -291,21 +297,6 @@
     }
 
     // ---- 呼び出しまわり ----
-    function refreshCall() {
-      return apiGet({ action: 'getStaffStatus' })
-        .then(function(data) {
-          if (!data.success) throw new Error(data.message);
-          if (data.currentcallingNo !== null) {
-            setCallUIState('calling', data.currentcallingNo);
-          } else {
-            setCallUIState('idle', null, data.waitingCount);
-          }
-        })
-        .catch(function(err) {
-          setStatusCall('通信エラー: ' + err, 'error');
-        });
-    }
-
     function callNext() {
       startLoading('呼び出し中...');
       setStatusCall('', '');
@@ -314,7 +305,7 @@
           if (!data.success) throw new Error(data.message);
           if (data.noneLeft) {
             setStatusCall('呼び出し待ちのお客様はいません', 'info');
-            return refreshCall();
+            return refreshAll();
           }
           setCallUIState('calling', data.ticketNo);
           setStatusCall('', '');
@@ -331,7 +322,7 @@
       apiGet({ action: 'confirmPresent' })
         .then(function(data) {
           if (!data.success) throw new Error(data.message);
-          return refreshCall();
+          return refreshAll();
         })
         .catch(function(err) {
           setStatusCall('エラー: ' + err, 'error');
@@ -357,11 +348,6 @@
           setStatusCall('エラー: ' + err, 'error');
         })
         .finally(function() { stopLoading(); });
-    }
-
-    // ---- 全体更新 ----
-    function refreshAll() {
-      return Promise.all([refreshIssue(), refreshCall()]);
     }
 
     window.onload = function() {
